@@ -22,86 +22,50 @@ type resData struct {
 	Body   string `json:"body"`
 }
 
-// func main() {
-
-// 	start := time.Now() // Record the start time
-
-// 	res1, err := thunder.Get("https://jsonplaceholder.typicode.com/todos/1", thunder.Config{
-// 		Headers: map[string]string{
-// 			"Content-Type": "application/json",
-// 			"Accept":       "application/json",
-// 		},
-// 	})
-
-// 	if err != nil {
-// 		defer res1.Body.Close()
-// 		var res1Data resData
-// 		if err := json.NewDecoder(res1.Body).Decode(&res1Data); err != nil {
-// 			panic(err)
-// 		}
-// 		fmt.Println("Response 1:")
-// 		fmt.Printf("UserId: %d\n", res1Data.UserId)
-// 		fmt.Printf("Id: %d\n", res1Data.Id)
-// 		fmt.Printf("Title: %s\n", res1Data.Title)
-// 		fmt.Printf("Completed: %t\n", res1Data.Completed)
-// 	}
-
-// 	res2, err := thunder.Get("https://jsonplaceholder.typicode.com/todos/2", thunder.Config{
-// 		Headers: map[string]string{
-// 			"Content-Type": "application/json",
-// 			"Accept":       "application/json",
-// 		},
-// 	})
-
-// 	if err != nil {
-// 		defer res2.Body.Close()
-// 		var res2Data resData
-// 		if err := json.NewDecoder(res2.Body).Decode(&res2Data); err != nil {
-// 			panic(err)
-// 		}
-// 		fmt.Println("Response 2:")
-// 		fmt.Printf("UserId: %d\n", res2Data.UserId)
-// 		fmt.Printf("Id: %d\n", res2Data.Id)
-// 		fmt.Printf("Title: %s\n", res2Data.Title)
-// 		fmt.Printf("Completed: %t\n", res2Data.Completed)
-// 	}
-
-// 	fmt.Println("hello fetch")
-
-// 	elapsed := time.Since(start) // Calculate elapsed time
-// 	fmt.Printf("Total time taken: %s\n", elapsed)
-// }
+type postData struct {
+	Title  string `json:"title"`
+	Body   string `json:"body"`
+	UserId int    `json:"userId"`
+}
 
 func main() {
 
 	start := time.Now() // Record the start time
 
-	resCh := thunder.Get("https://jsonplaceholder.typicode.com/comments", thunder.Config{
-		Params: map[string]string{
-			"postId": "1",
-			"userId": "1",
-		},
+	// data := postData{
+	// 	Title:  "My title again testing",
+	// 	Body:   "My body again",
+	// 	UserId: 1,
+	// }
+
+	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts/1", thunder.Config{
+		Method: "GETT",
 		Headers: map[string]string{
-			"Content-Type": "application/json",
-			"Accept":       "application/json",
+			"Accept": "application/json",
 		},
 	})
 
 	res1 := <-resCh
+	err := <-errCh
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	if res1 != nil {
+
 		defer res1.Body.Close()
-		var res1Data []resData
+		var res1Data any
 		if err := json.NewDecoder(res1.Body).Decode(&res1Data); err != nil {
 			panic(err)
 		}
-
-		for _, v := range res1Data {
-			fmt.Printf("UserId: %d\n", v.PostId)
-			fmt.Printf("Id: %d\n", v.Id)
-			fmt.Printf("Title: %s\n", v.Name)
-			fmt.Printf("Completed: %s\n", v.Email)
-		}
+		fmt.Println(res1Data)
+		// for _, v := range res1Data {
+		// 	fmt.Printf("UserId: %d\n", v.PostId)
+		// 	fmt.Printf("Id: %d\n", v.Id)
+		// 	fmt.Printf("Title: %s\n", v.Name)
+		// 	fmt.Printf("Completed: %s\n", v.Email)
+		// }
 	}
 	elapsed := time.Since(start) // Calculate elapsed time
 	fmt.Printf("Total time taken: %s\n", elapsed)
