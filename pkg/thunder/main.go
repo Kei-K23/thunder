@@ -84,8 +84,9 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 			errCh <- err // Send the error to the error channel
 			return
 		}
+
 		resCh <- res
-		errCh <- nil
+		errCh <- err
 	}()
 
 	return resCh, errCh

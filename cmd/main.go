@@ -35,7 +35,7 @@ func main() {
 		Title: "Patch request body",
 	}
 
-	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts/1", thunder.Config{
+	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/postss/1", thunder.Config{
 		Method: http.MethodPatch,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -45,8 +45,8 @@ func main() {
 	})
 
 	res1 := <-resCh
-	err := <-errCh
 
+	err := <-errCh
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -57,59 +57,10 @@ func main() {
 		if err := json.NewDecoder(res1.Body).Decode(&res1Data); err != nil {
 			panic(err)
 		}
-		fmt.Println(res1.StatusCode)
-		fmt.Println(res1Data)
+		if res1.StatusCode != 200 {
+			fmt.Println("error")
+			fmt.Println(res1Data)
+		}
 	}
+
 }
-
-// func startServer() {
-// 	mux := http.NewServeMux()
-// 	mux.HandleFunc("/world", func(w http.ResponseWriter, r *http.Request) {
-// 		fmt.Printf("server: %s\n", r.Method)
-
-// 		fmt.Printf("server: %s /\n", r.Method)
-// 		fmt.Printf("server: query id: %s\n", r.URL.Query().Get("id"))
-// 		fmt.Printf("server: content-type: %s\n", r.Header.Get("content-type"))
-// 		fmt.Printf("server: headers:\n")
-// 		for headerName, headerValue := range r.Header {
-// 			fmt.Printf("\t%s = %s\n", headerName, strings.Join(headerValue, ", "))
-// 		}
-
-// 		reqBody, err := io.ReadAll(r.Body)
-// 		if err != nil {
-// 			fmt.Printf("server: could not read request body: %s\n", err)
-// 		}
-// 		fmt.Printf("server: request body: %s\n", reqBody)
-
-// 		w.Header().Set("Content-Type", "application/json")
-// 		json.NewEncoder(w).Encode(dataStruct{Message: "hello!"})
-// 	})
-// 	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-// 		fmt.Printf("server: %s\n", r.Method)
-
-// 		fmt.Printf("server: %s\n", r.Method)
-// 		fmt.Printf("server: query id: %s\n", r.URL.Query().Get("id"))
-// 		fmt.Printf("server: content-type: %s\n", r.Header.Get("content-type"))
-// 		fmt.Printf("server: headers:\n")
-// 		for headerName, headerValue := range r.Header {
-// 			fmt.Printf("\t%s = %s\n", headerName, strings.Join(headerValue, ", "))
-// 		}
-
-// 		reqBody, err := io.ReadAll(r.Body)
-// 		if err != nil {
-// 			fmt.Printf("server: could not read request body: %s\n", err)
-// 		}
-// 		fmt.Printf("server: request body: %s\n", reqBody)
-
-// 		w.Header().Set("Content-Type", "application/json")
-// 		json.NewEncoder(w).Encode(dataStruct{Message: "hello!"})
-// 	})
-
-// 	server := http.Server{
-// 		Addr:    fmt.Sprintf(":%d", serverPort),
-// 		Handler: mux,
-// 	}
-// 	if err := server.ListenAndServe(); err != nil {
-// 		fmt.Printf("error running server: %s\n", err)
-// 	}
-// }
