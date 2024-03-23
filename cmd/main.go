@@ -23,6 +23,7 @@ type resData struct {
 }
 
 type postData struct {
+	Id     int    `json:"id"`
 	Title  string `json:"title"`
 	Body   string `json:"body"`
 	UserId int    `json:"userId"`
@@ -30,17 +31,17 @@ type postData struct {
 
 func main() {
 
-	// data := postData{
-	// 	Title:  "My title again testing",
-	// 	Body:   "My body again",
-	// 	UserId: 1,
-	// }
+	data := postData{
+		Title: "Patch request body",
+	}
 
-	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts", thunder.Config{
-		Method: http.MethodPost,
+	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts/1", thunder.Config{
+		Method: http.MethodPatch,
 		Headers: map[string]string{
-			"Accept": "application/json",
+			"Content-Type": "application/json",
+			"Accept":       "application/json",
 		},
+		JSONPayload: data,
 	})
 
 	res1 := <-resCh
@@ -56,6 +57,7 @@ func main() {
 		if err := json.NewDecoder(res1.Body).Decode(&res1Data); err != nil {
 			panic(err)
 		}
+		fmt.Println(res1.StatusCode)
 		fmt.Println(res1Data)
 	}
 }

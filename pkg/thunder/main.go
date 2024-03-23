@@ -23,22 +23,39 @@ type Config struct {
 
 // HTTPClient makes an HTTP request with the provided configuration
 func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
+	// Initialize channels for response and error
 	resCh := make(chan *http.Response)
 	errCh := make(chan error)
 
+	// Start go routine to make concurrent requests
 	go func() {
-		// Build URL with query parameters if provided
-		reqURL := buildURLWithParams(url, config.Params)
-
 		// Create request based on the specified method
 		var req *http.Request
 		var err error
 
+		// Build URL with query parameters if provided
+		reqURL := buildURLWithParams(url, config.Params)
+
+		// Check request method and perform HTTP request
 		switch config.Method {
 		case http.MethodGet:
-			req, err = http.NewRequest(http.MethodGet, reqURL, nil)
+			req, err = http.NewRequest(config.Method, reqURL, nil)
 		case http.MethodPost:
-			req, err = buildPostRequest(reqURL, config)
+			req, err = buildRequest(reqURL, config)
+		case http.MethodPut:
+			req, err = buildRequest(reqURL, config)
+		case http.MethodPatch:
+			req, err = buildRequest(reqURL, config)
+		case http.MethodDelete:
+			if config.FormPayload != nil {
+				req, err = buildRequest(reqURL, config)
+			} else if config.JSONPayload != nil {
+				req, err = buildRequest(reqURL, config)
+			} else if config.MultipartPayload != nil {
+				req, err = buildRequest(reqURL, config)
+			} else {
+				req, err = http.NewRequest(config.Method, url, nil)
+			}
 		default:
 			err = fmt.Errorf("unsupported HTTP method: %s", config.Method)
 		}
@@ -49,7 +66,7 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 			return
 		}
 
-		// Set request headers
+		// Set request headers if provide by user
 		for k, v := range config.Headers {
 			req.Header.Set(k, v)
 		}
@@ -74,8 +91,8 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 	return resCh, errCh
 }
 
-// buildPostRequest builds a POST request with the specified payload type
-func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
+// buildRequest builds a POST request with the specified payload type
+func buildRequest(reqUrl string, config Config) (*http.Request, error) {
 	var req *http.Request
 	var err error
 
@@ -86,7 +103,7 @@ func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
 		if err != nil {
 			return nil, err
 		}
-		req, err = http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(payloadData))
+		req, err = http.NewRequest(config.Method, reqUrl, bytes.NewBuffer(payloadData))
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +115,7 @@ func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
 		for key, value := range config.FormPayload {
 			formData.Set(key, value)
 		}
-		req, err = http.NewRequest(http.MethodPost, reqUrl, strings.NewReader(formData.Encode()))
+		req, err = http.NewRequest(config.Method, reqUrl, strings.NewReader(formData.Encode()))
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +142,7 @@ func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
 			return nil, err
 		}
 
-		req, err = http.NewRequest(http.MethodPost, reqUrl, body)
+		req, err = http.NewRequest(config.Method, reqUrl, body)
 		if err != nil {
 			return nil, err
 		}
