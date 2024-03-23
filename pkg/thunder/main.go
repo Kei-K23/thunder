@@ -13,7 +13,7 @@ import (
 
 // Config holds configuration options for HTTP requests
 type Config struct {
-	Method           string            // HTTP method like
+	Method           string            // HTTP method
 	Params           map[string]string // URL parameters
 	Headers          map[string]string // Request headers
 	JSONPayload      interface{}       // JSON payload data
