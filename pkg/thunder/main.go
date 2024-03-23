@@ -1,8 +1,11 @@
 package thunder
 
 import (
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/Kei-K23/thunder/pkg/thunder/internal/helper"
 )
 
 // requestData := []byte(`{"client_message": "hello from client"}`)
@@ -41,30 +44,39 @@ import (
 
 // Config holds configuration options for HTTP requests
 type Config struct {
+	Params  map[string]string
 	Headers map[string]string
 }
 
 // Get makes a GET request with the provided URL and configuration
-func Get(url string, config Config, ch chan<- *http.Response) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		ch <- nil
-		return
-	}
+func Get(url string, config Config) chan *http.Response {
+	// init channel to receive response or error if not successful
+	resCh := make(chan *http.Response)
 
-	for k, v := range config.Headers {
-		req.Header.Set(k, v)
-	}
+	go func() {
+		reqUrl := helper.BuildURLWithParams(url, config.Params)
 
-	client := http.Client{
-		Timeout: 30 * time.Second,
-	}
+		fmt.Println(reqUrl)
+		req, err := http.NewRequest(http.MethodGet, reqUrl, nil)
+		if err != nil {
+			resCh <- nil
+			return
+		}
 
-	res, err := client.Do(req)
-	if err != nil {
-		ch <- nil
-		return
-	}
+		for k, v := range config.Headers {
+			req.Header.Set(k, v)
+		}
 
-	ch <- res
+		client := http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			resCh <- nil
+			return
+		}
+		resCh <- res
+	}()
+	return resCh
 }
