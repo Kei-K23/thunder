@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Kei-K23/thunder/pkg/thunder/internal/helper"
@@ -12,11 +15,12 @@ import (
 
 // Config holds configuration options for HTTP requests
 type Config struct {
-	Method      string // HTTP method like
-	Params      map[string]string
-	Headers     map[string]string
-	JSONPayload interface{}       // JSON payload data
-	FormPayload map[string]string // Form payload data
+	Method           string            // HTTP method like
+	Params           map[string]string // URL parameters
+	Headers          map[string]string // Request headers
+	JSONPayload      interface{}       // JSON payload data
+	FormPayload      map[string]string // Form payload data
+	MultipartPayload map[string]string // Multipart/form-data payload data
 }
 
 // HTTPClient makes an HTTP request with the provided configuration
@@ -27,7 +31,6 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 	go func() {
 		// Build URL with query parameters if provided
 		reqURL := helper.BuildURLWithParams(url, config.Params)
-		fmt.Println(reqURL)
 
 		// Create request based on the specified method
 		var req *http.Request
@@ -60,51 +63,79 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 
 		// Send request and handle response
 		res, err := client.Do(req)
+
 		if err != nil {
 			resCh <- nil
 			errCh <- err // Send the error to the error channel
 			return
 		}
-
 		resCh <- res
+		errCh <- nil
 	}()
 
 	return resCh, errCh
 }
 
 // buildPostRequest builds a POST request with the specified payload type
-func buildPostRequest(url string, config Config) (*http.Request, error) {
-	var payloadData []byte
+func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
+	var req *http.Request
 	var err error
 
 	switch {
 	case config.JSONPayload != nil:
-		payloadData, err = json.Marshal(config.JSONPayload)
+		// JSON payload
+		payloadData, err := json.Marshal(config.JSONPayload)
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(payloadData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+
 	case len(config.FormPayload) > 0:
-		payloadData = []byte(formEncode(config.FormPayload))
+		// Form payload (application/x-www-form-urlencoded)
+		formData := url.Values{}
+		for key, value := range config.FormPayload {
+			formData.Set(key, value)
+		}
+		req, err = http.NewRequest(http.MethodPost, reqUrl, strings.NewReader(formData.Encode()))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	case len(config.MultipartPayload) > 0:
+		// Multipart/form-data payload
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+
+		for key, value := range config.MultipartPayload {
+			part, err := writer.CreateFormField(key)
+			if err != nil {
+				return nil, err
+			}
+			_, err = part.Write([]byte(value))
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+
+		req, err = http.NewRequest(http.MethodPost, reqUrl, body)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
 	default:
 		return nil, fmt.Errorf("no payload data provided")
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payloadData))
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json") // Set default content type for POST requests
-
 	return req, nil
-}
-
-// formEncode encodes form payload data into URL encoded format
-func formEncode(data map[string]string) string {
-	var encodedData string
-	for key, value := range data {
-		encodedData += fmt.Sprintf("%s=%s&", key, value)
-	}
-	return encodedData[:len(encodedData)-1] // Remove the trailing '&'
 }

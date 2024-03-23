@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"time"
+	"net/http"
 
 	"github.com/Kei-K23/thunder/pkg/thunder"
 )
@@ -30,16 +30,14 @@ type postData struct {
 
 func main() {
 
-	start := time.Now() // Record the start time
-
 	// data := postData{
 	// 	Title:  "My title again testing",
 	// 	Body:   "My body again",
 	// 	UserId: 1,
 	// }
 
-	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts/1", thunder.Config{
-		Method: "GETT",
+	resCh, errCh := thunder.HTTPClient("https://jsonplaceholder.typicode.com/posts", thunder.Config{
+		Method: http.MethodPost,
 		Headers: map[string]string{
 			"Accept": "application/json",
 		},
@@ -53,22 +51,13 @@ func main() {
 	}
 
 	if res1 != nil {
-
 		defer res1.Body.Close()
 		var res1Data any
 		if err := json.NewDecoder(res1.Body).Decode(&res1Data); err != nil {
 			panic(err)
 		}
 		fmt.Println(res1Data)
-		// for _, v := range res1Data {
-		// 	fmt.Printf("UserId: %d\n", v.PostId)
-		// 	fmt.Printf("Id: %d\n", v.Id)
-		// 	fmt.Printf("Title: %s\n", v.Name)
-		// 	fmt.Printf("Completed: %s\n", v.Email)
-		// }
 	}
-	elapsed := time.Since(start) // Calculate elapsed time
-	fmt.Printf("Total time taken: %s\n", elapsed)
 }
 
 // func startServer() {
