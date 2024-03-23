@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/Kei-K23/thunder/pkg/thunder/internal/helper"
 )
 
 // Config holds configuration options for HTTP requests
@@ -30,7 +28,7 @@ func HTTPClient(url string, config Config) (chan *http.Response, chan error) {
 
 	go func() {
 		// Build URL with query parameters if provided
-		reqURL := helper.BuildURLWithParams(url, config.Params)
+		reqURL := buildURLWithParams(url, config.Params)
 
 		// Create request based on the specified method
 		var req *http.Request
@@ -138,4 +136,16 @@ func buildPostRequest(reqUrl string, config Config) (*http.Request, error) {
 	}
 
 	return req, nil
+}
+
+func buildURLWithParams(url string, params map[string]string) string {
+	if len(params) == 0 {
+		return url
+	}
+
+	query := url + "?"
+	for k, v := range params {
+		query += fmt.Sprintf("%s=%s&", k, v)
+	}
+	return query[:len(query)-1] // Remove the trailing '&' character
 }
